@@ -1,0 +1,8 @@
+# Escoge el tipo de servidor, estas son las opciones que estan sostenidas por este script:
+- paper (Lo más vanilla que hay, tambien es muy similar y retrocompatible con Spigot y Bukkit)
+- mohist (Se usa para poner mods de forge y plugins a la vez)
+- forge (Se usa para mods)
+- fabric (Es una alternativa a Forge con sus diferencias pero no esretrocompatible con forge)
+- vanilla (Minecraft Vanilla sin mods ni plugins)
+- snapshot (Son las versiones de prueba del juego antes de sacar la siguiente version oficial. En 'version' tendrás que poner el nombre de la Snapshot, ej: 23w42a)
+>>>

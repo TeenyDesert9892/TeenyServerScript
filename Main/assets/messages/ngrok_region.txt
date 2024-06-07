@@ -1,0 +1,9 @@
+Elige la region del servidor:
+- ap - Asia/Pacific (Singapore)
+- au - Australia (Sydney)
+- eu - Europa (Frankfurt - Alemania)
+- in - India (Mumbai)
+- jp - Japan (Tokyo)
+- sa - America del sur (São Paulo - Brasil)
+- us - United States (Ohio)
+>>>

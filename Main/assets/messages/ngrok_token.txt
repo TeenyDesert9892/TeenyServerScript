@@ -1,0 +1,2 @@
+Consigue tu token en: https://dashboard.ngrok.com/get-started/your-authtoken
+Introduce tu token de ngrok:

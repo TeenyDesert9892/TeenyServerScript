@@ -1,0 +1,5 @@
+Que servicio quieres usar para el servidor:
+p - (playit) Es un servicio recomendado que solo consta de intalar su aplicacion, crearte una cuenta en su web y vincular el dispositivo.
+n - (ngrok) Es un servicio recomendado por si vas a tener tu servidor abierto infinitamente por que a diferencia del otro su ip se reinicia cada vez que lo abres, este no requiere de instalar nada.
+l - (local) No es ningun servicio en si es para probar los servidores en tu ordenador localmente y te unes poniendo localhost donde se introduce la ip de los servidores.
+>>>
