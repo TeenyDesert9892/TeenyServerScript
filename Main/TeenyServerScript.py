@@ -115,7 +115,7 @@ def create_server():
             serverURL = 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.2/fabric-installer-0.11.2.jar'
 
         jar_name = {'paper': 'server.jar', 'fabric': 'fabric-installer.jar', 'mohist': 'mohist.jar',
-                    'forge': 'forge.jar', 'vanilla': 'vanilla.jar', 'snapshot': "snapshot.jar"}
+                    'generic': 'server.jar', 'forge': 'forge.jar', 'vanilla': 'vanilla.jar', 'snapshot': "snapshot.jar"}
 
         print('Descargando a archivos del servidor...')
 
@@ -171,15 +171,15 @@ def start_server():
 
     print("Verificando si esta instalada la version correcta de jdk")
     jdk_version = get_jdk_version(server_version)
-    jdk_folder = get_jdk_version(jdk_version)
+    jdk_folder = get_jdk_server(jdk_version)
 
     if os.path.exists(f"{folder_name}"):
         os.chdir(f"{folder_name}")
 
         print(f"Estas usando la version de java: {jdk_version}")
 
-        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-installer.jar', 'mohist': 'mohist.jar',
-                    'forge': 'forge.jar', 'vanilla': 'vanilla.jar', 'snapshot': "snapshot.jar"}
+        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-server-launch.jar', 'mohist': 'mohist.jar',
+                    'generic': 'server.jar', 'forge': 'forge.jar', 'vanilla': 'vanilla.jar', 'snapshot': 'snapshot.jar'}
 
         jar_name = jar_list[server_type]
 
@@ -364,25 +364,23 @@ if __name__ == "__main__":
     except:
         config = [{"server_type": "", "server_version": "", "max_ram": "", "folder_name": ""}, {"service_type": "", "ngrok_token": "", "ngrok_region": ""}]
 
-    executing = True
     logo = read_message("logo")
 
-    while executing:
-        print("  " + logo)
-        selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n(4) Detener el programa\n>>> ")
+    print("  " + logo)
+    selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n(4) Detener el programa\n>>> ")
 
-        if platform.system() == "Windows":
-            subprocess.run("cls", shell=True)
-        else:
-            subprocess.run("clear", shell=True)
+    if platform.system() == "Windows":
+        subprocess.run("cls", shell=True)
+    else:
+        subprocess.run("clear", shell=True)
 
-        if selection == "1":
-            create_server_menu()
-        elif selection == "2":
-            start_server()
-        elif selection == "3":
-            configure_options()
-        elif selection == "4":
-            executing = False
-        else:
-            print("\nSeleccion no valida")
+    if selection == "1":
+        create_server_menu()
+    elif selection == "2":
+        start_server()
+    elif selection == "3":
+        configure_options()
+    elif selection == "4":
+        executing = False
+    else:
+        print("\nSeleccion no valida")

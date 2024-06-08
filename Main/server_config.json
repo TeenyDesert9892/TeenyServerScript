@@ -1,0 +1,13 @@
+[
+    {
+        "server_type": "paper",
+        "server_version": "1.12.2",
+        "max_ram": "-Xmx4G",
+        "folder_name": "Server"
+    },
+    {
+        "service_type": "p",
+        "ngrok_token": "",
+        "ngrok_region": "eu"
+    }
+]
