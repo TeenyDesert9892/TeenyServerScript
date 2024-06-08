@@ -206,7 +206,7 @@ def start_server():
                 urlb = ngrok.connect('19132', 'tcp')
                 print('La IP de tu servidor e bedrock es ' + ((str(urlb).split('"')[1::2])[0]).replace('tcp://', ''))
 
-            launch_server(server_type, server_version, memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
+            launch_server(memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
 
         elif service_type == "p":
             print('\nIniciando servidor con playit...')
@@ -225,7 +225,7 @@ def start_server():
 
         elif service_type == "l":
             print('\nIniciando servidor en localhost...')
-            launch_server(server_type, server_version, memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
+            launch_server(memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
         else:
             print("Servicio desconocido, el servidor no iniciara")
     else:
@@ -366,7 +366,7 @@ if __name__ == "__main__":
 
     logo = read_message("logo")
 
-    print("  " + logo)
+    print(logo)
     selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n(4) Detener el programa\n>>> ")
 
     if platform.system() == "Windows":
