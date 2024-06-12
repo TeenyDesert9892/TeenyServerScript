@@ -371,12 +371,12 @@ if __name__ == "__main__":
     try:
         load_config()
     except:
-        config = [{"server_type": "", "server_version": "", "max_ram": "", "folder_name": ""}, {"service_type": "", "ngrok_token": "", "ngrok_region": ""}]
+        config = [{"server_type": "", "server_version": "", "max_ram": "", "folder_name": ""}, {"connect_service": "", "ngrok_token": "", "ngrok_region": ""}]
 
     logo = read_message("logo")
 
     print(logo)
-    selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n(4) Detener el programa\n>>> ")
+    selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n>>> ")
 
     if platform.system() == "Windows":
         subprocess.run("cls", shell=True)
@@ -389,7 +389,5 @@ if __name__ == "__main__":
         start_server()
     elif selection == "3":
         configure_options()
-    elif selection == "4":
-        executing = False
     else:
         print("\nSeleccion no valida")
