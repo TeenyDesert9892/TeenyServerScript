@@ -1,2 +1,2 @@
-Cuanta ram quieres que pueda usar como maximo tu servidor? (Introducela en GB)
+Cuanta ram quieres que pueda usar como maximo tu servidor? (Introducela en GB):
 >>>

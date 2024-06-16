@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from threading import Thread
 
+import minecraft_launcher_lib as mllb
 import jdk
 import requests
 from pyngrok import conf, ngrok
@@ -59,17 +60,20 @@ def get_jdk_version(server_version=str):
 
 
 def get_jdk_server(jdk_version=str):
+    if not os.path.exists("assets/jdks"):
+        os.mkdir("assets/jdks")
+
     try:
         try:
             return os.path.normpath(f"{os.getcwd()}/{glob.glob('assets/jdks/jdk' + jdk_version + '*')[0]}")
         except:
-            jdk.install(version=jdk_version, operating_system=jdk.OperatingSystem.detect(), arch=jdk.Architecture.detect(), jre=True, path=os.path.normpath(f"{os.getcwd()}/assets/jdks"))
+            jdk.install(version=jdk_version, operating_system=jdk.OperatingSystem.detect(), arch=jdk.Architecture.detect(), jre=False, path=os.path.normpath(f"{os.getcwd()}/assets/jdks"))
             return os.path.normpath(f"{os.getcwd()}/{glob.glob('assets/jdks/jdk' + jdk_version + '*')[0]}")
     except:
         try:
             return os.path.normpath(f"{os.getcwd()}/{glob.glob('assets/jdks/jdk-' + jdk_version + '*')[0]}")
         except:
-            jdk.install(version=jdk_version, operating_system=jdk.OperatingSystem.detect(), arch=jdk.Architecture.detect(), jre=True, path=os.path.normpath(f"{os.getcwd()}/assets/jdks"))
+            jdk.install(version=jdk_version, operating_system=jdk.OperatingSystem.detect(), arch=jdk.Architecture.detect(), jre=False, path=os.path.normpath(f"{os.getcwd()}/assets/jdks"))
             return os.path.normpath(f"{os.getcwd()}/{glob.glob('assets/jdks/jdk-' + jdk_version + '*')[0]}")
 
 
@@ -82,81 +86,112 @@ def create_server():
     jdk_version = get_jdk_version(server_version)
     jdk_folder = get_jdk_server(jdk_version)
 
-    try:
-        if platform.system() == "Windows":
-            subprocess.run("dir", shell=True)
-        else:
-            subprocess.run("ls", shell=True)
+    if platform.system() == "Windows":
+        jdk_run = os.path.normpath(jdk_folder + "/bin/java.exe")
+    else:
+        jdk_run = os.path.normpath(jdk_folder + "/bin/java")
 
+    try:
         if not os.path.exists(f"{folder_name}"):
             os.mkdir(f"{folder_name}")
-        os.chdir(f"{folder_name}")
+
+        print('Descargando a archivos del servidor...')
 
         serverURL = ""
 
         if server_type == 'paper':
-            a = requests.get("https://papermc.io/api/v2/projects/paper/versions/" + server_version)
-            b = requests.get("https://papermc.io/api/v2/projects/paper/versions/" + server_version + "/builds/" + str(a.json()["builds"][-1]))
-            serverURL = "https://papermc.io/api/v2/projects/paper/versions/" + server_version + "/builds/" + str(a.json()["builds"][-1]) + "/downloads/" + b.json()["downloads"]["application"]["name"]
+            serverURL = "https://jar.smd.gg/download/paper/" + server_version + "/latest"
 
-        if server_type == 'mohist':
-            serverURL = "https://serverjars.com/api/fetchJar/modded/mohist/" + server_version
-
-        if server_type == 'forge':
-            serverURL = "https://serverjars.com/api/fetchJar/modded/forge/" + server_version
-
-        if server_type == 'vanilla':
-            serverURL = "https://serverjars.com/api/fetchJar/vanilla/vanilla/" + server_version
-
-        if server_type == 'snapshot':
-            serverURL = "https://serverjars.com/api/fetchJar/vanilla/snapshot/" + server_version
-
-        if server_type == 'fabric':
-            serverURL = 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/0.11.2/fabric-installer-0.11.2.jar'
-
-        jar_name = {'paper': 'server.jar', 'fabric': 'fabric-installer.jar', 'mohist': 'mohist.jar',
-                    'generic': 'server.jar', 'forge': 'forge.jar', 'vanilla': 'vanilla.jar', 'snapshot': "snapshot.jar"}
-
-        print('Descargando a archivos del servidor...')
-
-        request = requests.get(serverURL)
-
-        if request.status_code == 200:
-            with open(f'{jar_name[server_type]}', 'wb') as file:
-                file.write(request.content)
-
-        elif request.status_code == 502:
-            print('Error: ' + str(request.status_code) + "! La pagina se ha caido temporalmente prueba mas tarde...")
-
+        elif server_type == 'spigot':
+            if not os.path.exists("assets/BuildTools/BuildTools.jar"):
+                buildTools = requests.get("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar")
+                if buildTools.status_code == 200:
+                    if not os.path.exists("assets/BuildTools"):
+                        os.mkdir("assets/BuildTools")
+                    with open("assets/BuildTools/BuildTools.jar", "wb") as file:
+                        file.write(buildTools.content)
+                        file.close()
+            os.chdir("assets/BuildTools")
+            subprocess.run(f"{jdk_run} -jar BuildTools.jar --rev " + server_version)
             os.chdir("..")
-            os.remove("server_config.json")
-            shutil.rmtree(str(f"{os.getcwd()}/{folder_name}"))
-            return
+            os.chdir("..")
+            shutil.move(f"assets/BuildTools/spigot-{server_version}.jar", folder_name)
+            os.rename(folder_name + f"/spigot-{server_version}.jar", f"{folder_name}/spigot.jar")
+
+        elif server_type == 'mohist':
+            url = requests.get("https://mohistmc.com/api/v2/projects/mohist")
+            if url.status_code == 200:
+                for version in str(url.content).replace("b", "").replace("{", "").replace("}", "").replace("[", "").replace("]", "").replace('"', '').replace("'", "").split(":")[1].split(","):
+                    if version == server_version:
+                        getBuilds = requests.get("https://mohistmc.com/api/v2/projects/mohist/" + server_version + "/builds")
+                        if getBuilds.status_code == 200:
+                            with open("builds.json", "wb") as file:
+                                file.write(getBuilds.content)
+                                file.close()
+                        buildsFile = open("builds.json", "r")
+                        builds = json.load(buildsFile)
+                        buildsFile.close()
+                        os.remove("builds.json")
+                        bestBuild = 0
+                        for build in builds["builds"]:
+                            if build["number"] > bestBuild:
+                                bestBuild = build["number"]
+                                serverURL = build["url"]
+
+        elif server_type == 'forge':
+            forgeVersion = mllb.forge.find_forge_version(server_version)
+            serverURL = "https://maven.minecraftforge.net/net/minecraftforge/forge/" + forgeVersion + "/forge-" + forgeVersion + "-installer.jar"
+
+        elif server_type == 'vanilla':
+            serverURL = "https://jar.smd.gg/download/vanilla/" + server_version
+
+        elif server_type == 'fabric':
+            serverURL = 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.jar'
+
         else:
-            print('Error: ' + str(request.status_code) + '! La versión que has elegido probablemente no funciona / Puede ser que hallas introducido una version inexistente. Prueba a ejecutar el codigo otra vez por si acaso fue un pequeño error.')
+            print("El tipo de version que seleccionaste no es valido")
 
-            os.chdir("..")
-            os.remove("server_config.json")
-            shutil.rmtree(str(f"{os.getcwd()}/{folder_name}"))
-            return
+        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-installer.jar', 'mohist': 'mohist.jar', 'spigot': 'spigot.jar',
+                    'generic': 'server.jar', 'forge': 'mohist.jar', 'vanilla': 'vanilla.jar', 'snapshot': 'snapshot.jar'}
+
+        jar_name = jar_list[server_type]
+
+        os.chdir(folder_name)
+
+        if server_type != 'spigot':
+            request = requests.get(serverURL)
+            if request.status_code == 200:
+                with open(f'{jar_name}', 'wb') as file:
+                    file.write(request.content)
+                    file.close()
+            elif request.status_code == 502:
+                print('Error: ' + str(request.status_code) + "! La pagina se ha caido temporalmente prueba mas tarde...")
+            else:
+                print('Error: ' + str(request.status_code) + '! La versión que has elegido probablemente no funciona / Puede ser que hallas introducido una version inexistente. Prueba a ejecutar el codigo otra vez por si acaso fue un pequeño error.')
 
         if server_type == 'fabric':
-            try:
-                subprocess.run(f"'{jdk_folder}/bin/javaw.exe' -jar fabric-installer.jar server -mcversion ${server_version} -downloadMinecraft", shell=True)
-            except:
-                subprocess.run(f"{jdk_folder}/bin/javaw.exe -jar fabric-installer.jar server -mcversion ${server_version} -downloadMinecraft", shell=True)
+            subprocess.run(f"{jdk_run} -jar fabric-installer.jar server --mcversion ${server_version} --downloadMinecraft", shell=True)
+            minecraft_server_base = requests.get("https://jar.smd.gg/download/vanilla/" + server_version)
+            os.remove("fabric-installer.jar")
+            if minecraft_server_base.status_code == 200:
+                with open("server.jar", "wb") as jar:
+                    jar.write(minecraft_server_base.content)
+                    jar.close()
 
         if server_type == 'forge':
-            try:
-                subprocess.run(f"'{jdk_folder}/bin/javaw.exe' -jar forge.jar --installServer", shell=True)
-            except:
-                subprocess.run(f"{jdk_folder}/bin/javaw.exe -jar forge.jar --installServer", shell=True)
+            subprocess.run(f"{jdk_run} -jar forge.jar --installServer", shell=True)
 
-        print('Completado!')
+        print("Completado!")
         subprocess.run("echo eula=true>> eula.txt", shell=True)
 
         print("\n____________________AVISO!!!____________________\nSe ha creado un nuevo archivo al lado de TeenyServerScript llamado server_config.json\nSe recomienda mirarlo antes de iniciar el servidor por primera vez para saber que contiene\nCualquer cambio puede dañar al funcionamiento del servidor asi que sea delicado")
     except:
+        if os.path.exists(folder_name):
+            shutil.rmtree(folder_name)
+
+        if os.path.exists("server_config.json"):
+            os.remove("server_config.json")
+
         print("\nAlguno de los datos que has introducido es invalido\nDeteniendo el script...")
 
 
@@ -165,7 +200,7 @@ def start_server():
     server_type = config[0]["server_type"]
     folder_name = config[0]["folder_name"]
     max_ram = config[0]["max_ram"]
-    service_type = config[1]["service_type"]
+    connect_service = config[1]["connect_service"]
     ngrok_token = config[1]["ngrok_token"]
     ngrok_region = config[1]["ngrok_region"]
 
@@ -173,13 +208,18 @@ def start_server():
     jdk_version = get_jdk_version(server_version)
     jdk_folder = get_jdk_server(jdk_version)
 
+    if platform.system() == "Windows":
+        jdk_run = os.path.normpath(jdk_folder + "/bin/javaw.exe")
+    else:
+        jdk_run = os.path.normpath(jdk_folder + "/bin/java")
+
     if os.path.exists(f"{folder_name}"):
         os.chdir(f"{folder_name}")
 
         print(f"Estas usando la version de java: {jdk_version}")
 
-        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-server-launch.jar', 'mohist': 'mohist.jar',
-                    'generic': 'server.jar', 'forge': 'forge.jar', 'vanilla': 'vanilla.jar', 'snapshot': 'snapshot.jar'}
+        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-server-launch.jar', 'mohist': 'mohist.jar', 'spigot': 'spigot.jar',
+                    'generic': 'server.jar', 'forge': 'mohist.jar', 'vanilla': 'vanilla.jar', 'snapshot': 'snapshot.jar'}
 
         jar_name = jar_list[server_type]
 
@@ -194,7 +234,7 @@ def start_server():
         else:
             subprocess.run("clear", shell=True)
 
-        if service_type == "n":
+        if connect_service == "n":
             print('\nIniciando servidor con ngrok...')
 
             subprocess.run(f"ngrok authtoken {ngrok_token}", shell=True)
@@ -206,9 +246,9 @@ def start_server():
                 urlb = ngrok.connect('19132', 'tcp')
                 print('La IP de tu servidor e bedrock es ' + ((str(urlb).split('"')[1::2])[0]).replace('tcp://', ''))
 
-            launch_server(memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
+            launch_server(memory_allocation, server_flags, jar_name, jdk_run)
 
-        elif service_type == "p":
+        elif connect_service == "p":
             print('\nIniciando servidor con playit...')
 
             if not is_program_installed("playit"):
@@ -219,13 +259,17 @@ def start_server():
                     subprocess.run("sudo curl -SsL -o /etc/apt/sources.list.d/playit-cloud.list https://playit-cloud.github.io/ppa/playit-cloud.list", shell=True)
                     subprocess.run("sudo apt update &>/dev/null && sudo apt install playit &>/dev/null && echo 'Playit.gg instalado' || echo 'Error al instalar playit'", shell=True)
 
-            playitThread = Thread(target=subprocess.run, args=("playit", -1, None, None, None, None, None, None, True), daemon=True)
-            playitThread.start()
-            launch_server(memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
+            def playit():
+                subprocess.run("playit")
 
-        elif service_type == "l":
+            playitThread = Thread(target=playit, daemon=True)
+            playitThread.start()
+
+            launch_server(memory_allocation, server_flags, jar_name, jdk_run)
+
+        elif connect_service == "l":
             print('\nIniciando servidor en localhost...')
-            launch_server(memory_allocation, server_flags, jar_name, os.path.normpath(f"{jdk_folder}/bin/javaw.exe"))
+            launch_server(memory_allocation, server_flags, jar_name, jdk_run)
         else:
             print("Servicio desconocido, el servidor no iniciara")
     else:
@@ -242,9 +286,9 @@ def launch_server(memory_allocation=str, server_flags=str, jar_name=str, jdk=Non
             if oldpathtoforge:
                 path = oldpathtoforge[0]
                 try:
-                    subprocess.run(f"{jdk} {memory_allocation} -jar {path} nogui", shell=True)
+                    subprocess.run(f"{jdk} {memory_allocation} -jar {path}", shell=True)
                 except:
-                    subprocess.run(f"'{jdk}' {memory_allocation} -jar {path} nogui", shell=True)
+                    subprocess.run(f"'{jdk}' {memory_allocation} -jar {path}", shell=True)
             else:
                 print("No ha sido encontrado 'forge universal jar'")
         else:
@@ -252,16 +296,16 @@ def launch_server(memory_allocation=str, server_flags=str, jar_name=str, jdk=Non
             if pathtoforge:
                 path = pathtoforge[0]
                 try:
-                    subprocess.run(f"{jdk} @user_jvm_args.txt @{path} $@ nogui", shell=True)
+                    subprocess.run(f"{jdk} @user_jvm_args.txt @{path} $@", shell=True)
                 except:
-                    subprocess.run(f"'{jdk}' @user_jvm_args.txt @{path} $@ nogui", shell=True)
+                    subprocess.run(f"'{jdk}' @user_jvm_args.txt @{path} $@", shell=True)
             else:
                 print("No ha sido encontrado 'unix_args.txt'")
     else:
         try:
-            subprocess.run(f"{jdk} {memory_allocation} {server_flags} -jar {jar_name} nogui", shell=True)
+            subprocess.run(f"{jdk} {memory_allocation} {server_flags} -jar {jar_name}", shell=True)
         except:
-            subprocess.run(f"'{jdk}' {memory_allocation} {server_flags} -jar {jar_name} nogui", shell=True)
+            subprocess.run(f"'{jdk}' {memory_allocation} {server_flags} -jar {jar_name}", shell=True)
 
 
 def read_message(msg=str):
@@ -277,24 +321,24 @@ def create_server_menu():
 
     server_type = input(f"\n{server_type_message} ")
     server_version = input(f"\n{server_version_message} ")
-    max_ram = f"-Xmx{input(f"\n{max_ram_message} ")}G"
+    max_ram = "-Xmx"+input(f"\n{max_ram_message} ")+"G"
     folder_name = input(f"\n{folder_name_message} ").replace(" ", "-")
-    service_type = input(f"\n{connect_service_message} ")
+    connect_service = input(f"\n{connect_service_message} ")
 
-    if service_type == "n":
+    if connect_service == "n":
         ngrok_token_message = read_message("ngrok_token")
         ngrok_region_message = read_message("ngrok_region")
 
         ngrok_token = input(f"\n{ngrok_token_message} ")
         ngrok_region = input(f"\n{ngrok_region_message} ")
 
-    elif service_type == "p" or service_type == "l":
+    elif connect_service == "p" or connect_service == "l":
         ngrok_token = ""
         ngrok_region = "eu"
 
     else:
         print("\nNo se especifico el servicio de manera correcta, por defecto en local")
-        service_type = "l"
+        connect_service = "l"
         ngrok_token = ""
         ngrok_region = "eu"
 
@@ -305,7 +349,7 @@ def create_server_menu():
     config[0]["server_version"] = server_version
     config[0]["max_ram"] = max_ram
     config[0]["folder_name"] = folder_name
-    config[1]["service_type"] = service_type
+    config[1]["connect_service"] = connect_service
     config[1]["ngrok_token"] = ngrok_token
     config[1]["ngrok_region"] = ngrok_region
 
@@ -321,10 +365,10 @@ def create_server_menu():
 
 def configure_options():
     if os.path.exists("server_config.json"):
-        option = input("Select the option you want to edit:\n(1) Change server Ram\n(2) Change folder name\n(3) Change service type\n(4) Delete current server")
+        option = input("\nSelect the option you want to edit:\n(1) Change server Ram\n(2) Change folder name\n(3) Change service type\n(4) Delete current server\n>>> ")
         if option == "1":
             max_ram_message = read_message("max_ram")
-            config[0]["max_ram"] = f"-Xmx{input(f'\n {max_ram_message} ')}G"
+            config[0]["max_ram"] = "-Xmx"+input(f"\n {max_ram_message} ")+"G"
         elif option == "2":
             folder_name_message = read_message("folder_name")
             config[0]["folder_name"] = input(f"\n {folder_name_message} ")
@@ -359,15 +403,20 @@ def configure_options():
 
 
 if __name__ == "__main__":
+    if platform.system() == "Windows":
+        subprocess.run("cls", shell=True)
+    else:
+        subprocess.run("clear", shell=True)
+
     try:
         load_config()
     except:
-        config = [{"server_type": "", "server_version": "", "max_ram": "", "folder_name": ""}, {"service_type": "", "ngrok_token": "", "ngrok_region": ""}]
+        config = [{"server_type": "", "server_version": "", "max_ram": "", "folder_name": ""}, {"connect_service": "", "ngrok_token": "", "ngrok_region": ""}]
 
     logo = read_message("logo")
 
     print(logo)
-    selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n(4) Detener el programa\n>>> ")
+    selection = input("\nOpciones para iniciar el servidor:\n(1) Instalar un servidor\n(2) Inicar el servidor (primero usa el 1)\n(3) Configurar opciones del servidor\n>>> ")
 
     if platform.system() == "Windows":
         subprocess.run("cls", shell=True)
@@ -380,7 +429,5 @@ if __name__ == "__main__":
         start_server()
     elif selection == "3":
         configure_options()
-    elif selection == "4":
-        executing = False
     else:
         print("\nSeleccion no valida")
