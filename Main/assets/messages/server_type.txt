@@ -1,5 +1,5 @@
 # Escoge el tipo de servidor, estas son las opciones que estan sostenidas por este script:
-- paper (Lo más vanilla que hay, tambien es muy similar y retrocompatible con Spigot y Bukkit)
+- paper (Lo mas vanilla que hay, tambien es muy similar y retrocompatible con Spigot y Bukkit)
 - spigot (Muy similar a paper pero con alguna caracteristica menos)
 - mohist (Se usa para poner mods de forge y plugins a la vez)
 - forge (Se usa para mods)

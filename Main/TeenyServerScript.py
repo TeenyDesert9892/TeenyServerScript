@@ -6,11 +6,10 @@ import shutil
 import subprocess
 from threading import Thread
 
-import minecraft_launcher_lib as mllb
 import jdk
+import minecraft_launcher_lib as mllb
 import requests
 from pyngrok import conf, ngrok
-
 
 print("This script was made by TeenyDesert9892")
 
@@ -95,7 +94,7 @@ def create_server():
         if not os.path.exists(f"{folder_name}"):
             os.mkdir(f"{folder_name}")
 
-        print('Descargando a archivos del servidor...')
+        print('Descargando archivos del servidor...')
 
         serverURL = ""
 
@@ -103,20 +102,17 @@ def create_server():
             serverURL = "https://jar.smd.gg/download/paper/" + server_version + "/latest"
 
         elif server_type == 'spigot':
-            if not os.path.exists("assets/BuildTools/BuildTools.jar"):
-                buildTools = requests.get("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar")
-                if buildTools.status_code == 200:
-                    if not os.path.exists("assets/BuildTools"):
-                        os.mkdir("assets/BuildTools")
-                    with open("assets/BuildTools/BuildTools.jar", "wb") as file:
-                        file.write(buildTools.content)
-                        file.close()
-            os.chdir("assets/BuildTools")
-            subprocess.run(f"{jdk_run} -jar BuildTools.jar --rev " + server_version)
+            if not os.path.exists("BuildTools"):
+                os.mkdir("BuildTools")
+            buildTools = requests.get("https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar")
+            if buildTools.status_code == 200:
+                with open("BuildTools/BuildTools.jar", "wb") as file:
+                    file.write(buildTools.content)
+                    file.close()
+            os.chdir("BuildTools")
+            subprocess.run(f"{jdk_run} -jar BuildTools.jar --rev {server_version} --final-name spigot.jar", shell=True)
             os.chdir("..")
-            os.chdir("..")
-            shutil.move(f"assets/BuildTools/spigot-{server_version}.jar", folder_name)
-            os.rename(folder_name + f"/spigot-{server_version}.jar", f"{folder_name}/spigot.jar")
+            shutil.move(f"BuildTools/spigot.jar", folder_name)
 
         elif server_type == 'mohist':
             url = requests.get("https://mohistmc.com/api/v2/projects/mohist")
@@ -146,13 +142,13 @@ def create_server():
             serverURL = "https://jar.smd.gg/download/vanilla/" + server_version
 
         elif server_type == 'fabric':
-            serverURL = 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.0.1/fabric-installer-1.0.1.jar'
+            serverURL = "https://meta.fabricmc.net/v2/versions/loader/" + server_version + "/0.15.11/1.0.1/server/jar"
 
         else:
             print("El tipo de version que seleccionaste no es valido")
 
-        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-installer.jar', 'mohist': 'mohist.jar', 'spigot': 'spigot.jar',
-                    'generic': 'server.jar', 'forge': 'mohist.jar', 'vanilla': 'vanilla.jar', 'snapshot': 'snapshot.jar'}
+        jar_list = {'paper': 'server.jar', 'fabric': 'fabric.jar', 'mohist': 'mohist.jar','spigot': 'spigot.jar',
+                    'generic': 'server.jar', 'forge': 'forge.jar', 'vanilla': 'vanilla.jar'}
 
         jar_name = jar_list[server_type]
 
@@ -169,20 +165,16 @@ def create_server():
             else:
                 print('Error: ' + str(request.status_code) + '! La versión que has elegido probablemente no funciona / Puede ser que hallas introducido una version inexistente. Prueba a ejecutar el codigo otra vez por si acaso fue un pequeño error.')
 
-        if server_type == 'fabric':
-            subprocess.run(f"{jdk_run} -jar fabric-installer.jar server --mcversion ${server_version} --downloadMinecraft", shell=True)
-            minecraft_server_base = requests.get("https://jar.smd.gg/download/vanilla/" + server_version)
-            os.remove("fabric-installer.jar")
-            if minecraft_server_base.status_code == 200:
-                with open("server.jar", "wb") as jar:
-                    jar.write(minecraft_server_base.content)
-                    jar.close()
-
         if server_type == 'forge':
             subprocess.run(f"{jdk_run} -jar forge.jar --installServer", shell=True)
+            os.remove("forge.jar")
+            os.remove("forge.jar.log")
 
         print("Completado!")
-        subprocess.run("echo eula=true>> eula.txt", shell=True)
+
+        with open("eula.txt", "w") as eula:
+            eula.write("eula=true")
+            eula.close()
 
         print("\n____________________AVISO!!!____________________\nSe ha creado un nuevo archivo al lado de TeenyServerScript llamado server_config.json\nSe recomienda mirarlo antes de iniciar el servidor por primera vez para saber que contiene\nCualquer cambio puede dañar al funcionamiento del servidor asi que sea delicado")
     except:
@@ -199,7 +191,7 @@ def start_server():
     server_version = config[0]["server_version"]
     server_type = config[0]["server_type"]
     folder_name = config[0]["folder_name"]
-    max_ram = config[0]["max_ram"]
+    ram = config[0]["ram"]
     connect_service = config[1]["connect_service"]
     ngrok_token = config[1]["ngrok_token"]
     ngrok_region = config[1]["ngrok_region"]
@@ -218,8 +210,8 @@ def start_server():
 
         print(f"Estas usando la version de java: {jdk_version}")
 
-        jar_list = {'paper': 'server.jar', 'fabric': 'fabric-server-launch.jar', 'mohist': 'mohist.jar', 'spigot': 'spigot.jar',
-                    'generic': 'server.jar', 'forge': 'mohist.jar', 'vanilla': 'vanilla.jar', 'snapshot': 'snapshot.jar'}
+        jar_list = {'paper': 'server.jar', 'fabric': 'fabric.jar', 'mohist': 'mohist.jar', 'spigot': 'spigot.jar',
+                    'generic': 'server.jar', 'forge': 'forge.jar', 'vanilla': 'vanilla.jar'}
 
         jar_name = jar_list[server_type]
 
@@ -227,7 +219,7 @@ def start_server():
             server_flags = "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true"
         else:
             server_flags = ""
-        memory_allocation = f"-Xms512M {max_ram}"
+        memory_allocation = f"-Xms{ram}G -Xmx{ram}G"
 
         if platform.system() == "Windows":
             subprocess.run("cls", shell=True)
@@ -260,7 +252,7 @@ def start_server():
                     subprocess.run("sudo apt update &>/dev/null && sudo apt install playit &>/dev/null && echo 'Playit.gg instalado' || echo 'Error al instalar playit'", shell=True)
 
             def playit():
-                subprocess.run("playit")
+                subprocess.run("playit", shell=True)
 
             playitThread = Thread(target=playit, daemon=True)
             playitThread.start()
@@ -276,7 +268,7 @@ def start_server():
         print("\nAun no tienes ningun servidor creado")
 
 
-def launch_server(memory_allocation=str, server_flags=str, jar_name=str, jdk=None):
+def launch_server(memory_allocation=str, server_flags=str, jar_name=str, jdk=str):
     server_type = config[0]["server_type"]
     server_version = config[0]["server_version"]
 
@@ -309,19 +301,22 @@ def launch_server(memory_allocation=str, server_flags=str, jar_name=str, jdk=Non
 
 
 def read_message(msg=str):
-    with open(f'assets/messages/{msg}.txt', 'r') as file: return file.read()
+    with open(f'assets/messages/{msg}.txt', 'r') as file:
+        info = file.read()
+        file.close()
+        return info
 
 
 def create_server_menu():
     server_type_message = read_message("server_type")
     server_version_message = read_message("server_version")
-    max_ram_message = read_message("max_ram")
+    ram_message = read_message("ram")
     folder_name_message = read_message("folder_name")
     connect_service_message = read_message("connect_service")
 
     server_type = input(f"\n{server_type_message} ")
     server_version = input(f"\n{server_version_message} ")
-    max_ram = "-Xmx"+input(f"\n{max_ram_message} ")+"G"
+    ram = input(f"\n{ram_message} ")
     folder_name = input(f"\n{folder_name_message} ").replace(" ", "-")
     connect_service = input(f"\n{connect_service_message} ")
 
@@ -347,7 +342,7 @@ def create_server_menu():
 
     config[0]["server_type"] = server_type
     config[0]["server_version"] = server_version
-    config[0]["max_ram"] = max_ram
+    config[0]["ram"] = ram
     config[0]["folder_name"] = folder_name
     config[1]["connect_service"] = connect_service
     config[1]["ngrok_token"] = ngrok_token
@@ -367,8 +362,8 @@ def configure_options():
     if os.path.exists("server_config.json"):
         option = input("\nSelect the option you want to edit:\n(1) Change server Ram\n(2) Change folder name\n(3) Change service type\n(4) Delete current server\n>>> ")
         if option == "1":
-            max_ram_message = read_message("max_ram")
-            config[0]["max_ram"] = "-Xmx"+input(f"\n {max_ram_message} ")+"G"
+            ram_message = read_message("ram")
+            config[0]["ram"] = input(f"\n {ram_message} ")
         elif option == "2":
             folder_name_message = read_message("folder_name")
             config[0]["folder_name"] = input(f"\n {folder_name_message} ")
@@ -411,7 +406,7 @@ if __name__ == "__main__":
     try:
         load_config()
     except:
-        config = [{"server_type": "", "server_version": "", "max_ram": "", "folder_name": ""}, {"connect_service": "", "ngrok_token": "", "ngrok_region": ""}]
+        config = [{"server_type": "", "server_version": "", "ram": "", "folder_name": ""}, {"connect_service": "", "ngrok_token": "", "ngrok_region": ""}]
 
     logo = read_message("logo")
 
