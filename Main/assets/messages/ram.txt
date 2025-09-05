@@ -1,2 +1,0 @@
-Cuanta ram quieres que pueda usar con tu servidor? (Introducela en GB):
->>>

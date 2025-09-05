@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "teenyserverscript"
+version = "1.0.0"
+description = "A Minecraft server manager"
+readme = "README.md"
+python = "3.12"
+authors = [
+    { name = "TeenyDesert9892", email = "teenydesert9892@gmail.com" }
+]
+
+[project]
+dependencies = [
+  
+]

@@ -1,2 +1,0 @@
-Introduce el nombre de la carpeta de el servidor para poner un poco de organizacion:
->>>
